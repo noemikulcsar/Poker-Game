@@ -1,0 +1,267 @@
+.386
+.model flat, stdcall
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;includem biblioteci, si declaram ce functii vrem sa importam
+includelib msvcrt.lib
+
+extern exit: proc
+extern malloc: proc
+extern memset: proc
+
+includelib canvas.lib
+
+extern BeginDrawing: proc
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;declaram simbolul start ca public - de acolo incepe executia
+public start
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;sectiunile programului, date, respectiv cod
+.data
+;aici declaram date
+window_title DB "Generare carti de poker",0
+area_width EQU 640
+area_height EQU 480
+area DD 0
+
+counter DD 0 ; numara evenimentele de tip timer
+
+arg1 EQU 8
+arg2 EQU 12
+arg3 EQU 16
+arg4 EQU 20
+
+CARTE struct
+	simbol DB 20 dup(0)
+	numar DB 10 dup(0)
+CARTE ends
+
+numar_carti1 DW 24
+numar_carti2 DW 24
+
+carti1 CARTE {"inima rosie","As"},{"inima neagra","As"},
+{"trefla","As"},{"romb","As"},
+{"inima rosie","2"},{"inima neagra","2"},
+{"trefla","2"},{"romb","2"},
+{"inima rosie","3"},{"inima neagra","3"},
+{"trefla","3"},{"romb","3"},
+{"inima rosie","4"},{"inima neagra","4"},
+{"trefla","4"},{"romb","4"},
+{"inima rosie","5"},{"inima neagra","5"},
+{"trefla","5"},{"romb","5"},
+{"inima rosie","6"},{"inima neagra","6"},
+{"trefla","6"},{"romb","6"},
+{"inima rosie","7"},{"inima neagra","7"},
+{"trefla","7"},{"romb","7"}
+
+carti2 CARTE {"inima rosie","8"},{"inima neagra","8"},
+{"trefla","8"},{"romb","8"},
+{"inima rosie","9"},{"inima neagra","9"},
+{"trefla","9"},{"romb","9"},
+{"inima rosie","10"},{"inima neagra","10"},
+{"trefla","10"},{"romb","10"},
+{"inima rosie","J"},{"inima neagra","J"},
+{"trefla","J"},{"romb","J"},
+{"inima rosie","K"},{"inima neagra","K"},
+{"trefla","K"},{"romb","K"},
+{"inima rosie","Q"},{"inima neagra","Q"},
+{"trefla","Q"},{"romb","Q"}
+include digits.inc
+include letters.inc
+symbol_width EQU 10
+symbol_height EQU 20
+
+.code
+; procedura make_text afiseaza o litera sau o cifra la coordonatele date
+; arg1 - simbolul de afisat (litera sau cifra)
+; arg2 - pointer la vectorul de pixeli
+; arg3 - pos_x
+; arg4 - pos_y
+make_text proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	mov eax, [ebp+arg1] ; citim simbolul de afisat
+	cmp eax, 'A'
+	jl make_digit
+	cmp eax, 'Z'
+	jg make_digit
+	sub eax, 'A'
+	lea esi, letters
+	jmp draw_text
+make_digit:
+	cmp eax, '0'
+	jl make_space
+	cmp eax, '9'
+	jg make_space
+	sub eax, '0'
+	lea esi, digits
+	jmp draw_text
+make_space:	
+	mov eax, 26 ; de la 0 pana la 25 sunt litere, 26 e space
+	lea esi, letters
+	
+draw_text:
+	mov ebx, symbol_width
+	mul ebx
+	mov ebx, symbol_height
+	mul ebx
+	add esi, eax
+	mov ecx, symbol_height
+bucla_simbol_linii:
+	mov edi, [ebp+arg2] ; pointer la matricea de pixeli
+	mov eax, [ebp+arg4] ; pointer la coord y
+	add eax, symbol_height
+	sub eax, ecx
+	mov ebx, area_width
+	mul ebx
+	add eax, [ebp+arg3] ; pointer la coord x
+	shl eax, 2 ; inmultim cu 4, avem un DWORD per pixel
+	add edi, eax
+	push ecx
+	mov ecx, symbol_width
+bucla_simbol_coloane:
+	cmp byte ptr [esi], 0
+	je simbol_pixel_alb
+	mov dword ptr [edi], 0
+	jmp simbol_pixel_next
+simbol_pixel_alb:
+	mov dword ptr [edi], 0FFFFFFh
+simbol_pixel_next:
+	inc esi
+	add edi, 4
+	loop bucla_simbol_coloane
+	pop ecx
+	loop bucla_simbol_linii
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+make_text endp
+
+; un macro ca sa apelam mai usor desenarea simbolului
+make_text_macro macro symbol, drawArea, x, y
+	push y
+	push x
+	push drawArea
+	push symbol
+	call make_text
+	add esp, 16
+endm
+
+; functia de desenare - se apeleaza la fiecare click
+; sau la fiecare interval de 200ms in care nu s-a dat click
+; arg1 - evt (0 - initializare, 1 - click, 2 - s-a scurs intervalul fara click)
+; arg2 - x
+; arg3 - y
+draw proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	mov eax, [ebp+arg1]
+	cmp eax, 1
+	jz evt_click
+	cmp eax, 2
+	jz evt_timer ; nu s-a efectuat click pe nimic
+	;mai jos e codul care intializeaza fereastra cu pixeli albi
+	mov eax, area_width
+	mov ebx, area_height
+	mul ebx
+	shl eax, 2
+	push eax
+	push 255
+	push area
+	call memset
+	add esp, 12
+	jmp afisare_litere
+	
+evt_click:
+	mov edi, area
+	mov ecx, area_height
+	mov ebx, [ebp+arg3]
+	and ebx, 7
+	inc ebx
+bucla_linii:
+	mov eax, [ebp+arg2]
+	and eax, 0FFh
+	; provide a new (random) color
+	mul eax
+	mul eax
+	add eax, ecx
+	push ecx
+	mov ecx, area_width
+bucla_coloane:
+	mov [edi], eax
+	add edi, 4
+	add eax, ebx
+	loop bucla_coloane
+	pop ecx
+	loop bucla_linii
+	jmp afisare_litere
+	
+evt_timer:
+	inc counter
+	
+afisare_litere:
+	;afisam valoarea counter-ului curent (sute, zeci si unitati)
+	mov ebx, 10
+	mov eax, counter
+	;cifra unitatilor
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 30, 10
+	;cifra zecilor
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 20, 10
+	;cifra sutelor
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 10, 10
+	
+	;scriem un mesaj
+	make_text_macro 'P', area, 250, 50
+	make_text_macro 'O', area, 260, 50
+	make_text_macro 'K', area, 270, 50
+	make_text_macro 'E', area, 280, 50
+	make_text_macro 'R', area, 290, 50
+
+final_draw:
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+draw endp
+
+start:
+	;alocam memorie pentru zona de desenat
+	mov eax, area_width
+	mov ebx, area_height
+	mul ebx
+	shl eax, 2
+	push eax
+	call malloc
+	add esp, 4
+	mov area, eax
+	;apelam functia de desenare a ferestrei
+	; typedef void (*DrawFunc)(int evt, int x, int y);
+	; void __cdecl BeginDrawing(const char *title, int width, int height, unsigned int *area, DrawFunc draw);
+	push offset draw
+	push area
+	push area_height
+	push area_width
+	push offset window_title
+	call BeginDrawing
+	add esp, 20
+	
+	;terminarea programului
+	push 0
+	call exit
+end start
