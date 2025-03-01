@@ -1,18 +1,81 @@
-This file was provided by: https://www.dll-files.com/
+# 🃏 Poker Card Generator 🎮
 
-If you downloaded it from somewhere else, please let us know: info@dll-files.com
+A graphical poker hand evaluator written in Assembly language. This program generates random poker hands and automatically determines the best possible poker combination.
 
-DLL-Files.com is owned and operated by Tilf AB, Sweden. The collection of DLL files as a whole (falls under the “collection copyright” laws) are © Copyright Tilf AB
+## 📋 Overview
 
-The individual DLL files are provided free of charge with the understanding that the user is familiar with their use.
+This project demonstrates low-level programming concepts using x86 Assembly to create a visual poker application. The program:
 
-If you need help installing the file, please see:
-https://www.dll-files.com/support/
-or ask your question in the forum:
-https://forum.dll-files.com/
+1. Randomly generates 5 unique playing cards
+2. Displays them graphically in a window
+3. Automatically determines and displays the best poker hand combination
 
-DISCLAIMER AND LIMITATION OF LIABILITY
+## 🎯 Features
 
-The Following Refers to all Files with the Extension of "dll" or dlls compressed as "zip".
+- **Card Generation**: Uses randomization to produce unique poker hands
+- **Graphical Interface**: Renders detailed card images with proper suits and values
+- **Hand Evaluation**: Detects all standard poker combinations:
+  - Royal Flush
+  - Straight Flush
+  - Four of a Kind
+  - Full House
+  - Flush
+  - Straight
+  - Three of a Kind
+  - Two Pair
+  - Pair
+  - High Card
 
-All files are provided on an as is basis. No guarantees or warranties are given or implied. Downloading files from this site is free of charge and the user assumes all risks of any damages that may occur, including but not limited to loss of data, damages to hardware, or loss of business profits. We do our best to ensure that all files are virus-free using available means. However, all files have not been tested for functionality or contamination. Many have been sent to us by visitors like yourself. Thus, we suggest that you do a virus scan using an up-to-date version of an anti-virus program before use. Please use at your own risk.
+## 🔧 Technical Implementation
+
+This assembly program uses:
+
+- **Canvas Library**: For window and graphical drawing operations
+- **MSVCRT Library**: For memory allocation and standard operations
+- **Custom Macros**: For streamlined drawing and evaluation procedures
+- **Embedded Image Data**: Card images stored as embedded pixel data
+
+## 🖼️ Visual Components
+
+- Each card is rendered with appropriate suit symbols:
+  - ♥️ Hearts (inima rosie)
+  - ♠️ Spades (inima neagra)  
+  - ♣️ Clubs (trefla)
+  - ♦️ Diamonds (romb)
+
+## 🧮 Algorithm Details
+
+The program follows these steps:
+1. Generate random cards (ensuring uniqueness)
+2. Display cards graphically in the window
+3. Identify card attributes (suit and rank)
+4. Evaluate for all possible combinations, prioritizing from highest to lowest rank
+5. Display the resulting combination name
+
+## 💻 Running the Program
+
+The program requires:
+- x86 Assembly environment
+- MASM/TASM compatible assembler
+- The referenced libraries (canvas.lib and msvcrt.lib)
+- All included image files in the project directory
+
+## 🔍 Educational Value
+
+This project demonstrates:
+- Low-level bit manipulation
+- Random number generation
+- Memory management
+- Algorithm implementation in Assembly
+- Graphical programming fundamentals
+
+## 📝 Code Structure
+
+- **Data Section**: Contains card image data, variables and structures
+- **Procedures**: Functions for rendering and evaluating poker hands
+- **Macros**: Helper code for repetitive operations
+- **Main Logic**: Card generation and game initialization
+
+---
+
+*This project was created as a demonstration of Assembly programming techniques for graphical applications and game logic.*
