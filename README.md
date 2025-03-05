@@ -76,6 +76,3 @@ This project demonstrates:
 - **Macros**: Helper code for repetitive operations
 - **Main Logic**: Card generation and game initialization
 
----
-
-*This project was created as a demonstration of Assembly programming techniques for graphical applications and game logic.*
